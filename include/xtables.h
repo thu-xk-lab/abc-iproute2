@@ -31,7 +31,7 @@
 #define IPPROTO_UDPLITE	136
 #endif
 
-#include <xtables-version.h>
+#include <xtables.h>
 
 struct in_addr;
 

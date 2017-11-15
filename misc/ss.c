@@ -45,6 +45,8 @@
 #include <linux/netlink_diag.h>
 #include <linux/sctp.h>
 
+#include <sys/time.h>
+
 #define MAGIC_SEQ 123456
 
 #define DIAG_REQUEST(_req, _r)						    \
@@ -1878,7 +1880,11 @@ static void sctp_stats_print(struct sctp_info *s)
 static void tcp_stats_print(struct tcpstat *s)
 {
 	char b1[64];
+	struct timeval ts;
 
+	gettimeofday(&ts, NULL);
+	printf(" time:%lu.%06lu", ts.tv_sec, ts.tv_usec);
+	
 	if (s->has_ts_opt)
 		printf(" ts");
 	if (s->has_sack_opt)
@@ -1890,7 +1896,7 @@ static void tcp_stats_print(struct tcpstat *s)
 	if (s->has_fastopen_opt)
 		printf(" fastopen");
 	if (s->cong_alg[0])
-		printf(" %s", s->cong_alg);
+		printf(" cong:%s", s->cong_alg);
 	if (s->has_wscale_opt)
 		printf(" wscale:%d,%d", s->snd_wscale, s->rcv_wscale);
 	if (s->rto)
@@ -1957,7 +1963,7 @@ static void tcp_stats_print(struct tcpstat *s)
 	}
 
 	if (s->send_bps)
-		printf(" send %sbps", sprint_bw(b1, s->send_bps));
+		printf(" send:%sbps", sprint_bw(b1, s->send_bps));
 	if (s->lastsnd)
 		printf(" lastsnd:%u", s->lastsnd);
 	if (s->lastrcv)
@@ -1966,7 +1972,7 @@ static void tcp_stats_print(struct tcpstat *s)
 		printf(" lastack:%u", s->lastack);
 
 	if (s->pacing_rate) {
-		printf(" pacing_rate %sbps", sprint_bw(b1, s->pacing_rate));
+		printf(" pacing_rate:%sbps", sprint_bw(b1, s->pacing_rate));
 		if (s->pacing_rate_max)
 				printf("/%sbps", sprint_bw(b1,
 							s->pacing_rate_max));
