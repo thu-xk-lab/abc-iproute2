@@ -125,6 +125,7 @@ enum {
 	INET_DIAG_PAD,
 	INET_DIAG_MARK,
 	INET_DIAG_BBRINFO,
+	INET_DIAG_LBBRINFO,
 	__INET_DIAG_MAX,
 };
 
@@ -169,9 +170,18 @@ struct tcp_bbr_info {
 	__u32	bbr_cwnd_gain;		/* cwnd gain shifted left 8 bits */
 };
 
+struct tcp_lbbr_info {
+	__u32	lbbr_bw_lo;		/* lower 32 bits of bw */
+	__u32	lbbr_bw_hi;
+	__u32	lbbr_min_rtt;
+	__u32	lbbr_ssthresh;
+	__u32	lbbr_target_cwnd;
+};
+
 union tcp_cc_info {
 	struct tcpvegas_info	vegas;
 	struct tcp_dctcp_info	dctcp;
 	struct tcp_bbr_info	bbr;
+	struct tcp_lbbr_info	lbbr;
 };
 #endif /* _INET_DIAG_H_ */

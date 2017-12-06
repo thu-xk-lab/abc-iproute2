@@ -825,6 +825,7 @@ struct tcpstat {
 	bool		    has_wscale_opt;
 	struct dctcpstat    *dctcp;
 	struct tcp_bbr_info *bbr_info;
+	struct tcp_lbbr_info *lbbr_info;
 };
 
 /* SCTP assocs share the same inode number with their parent endpoint. So if we
@@ -1962,6 +1963,23 @@ static void tcp_stats_print(struct tcpstat *s)
 		printf(")");
 	}
 
+	if (s->lbbr_info) {
+		__u64 bw;
+
+		bw = s->lbbr_info->lbbr_bw_hi;
+		bw <<= 32;
+		bw |= s->lbbr_info->lbbr_bw_lo;
+
+		printf(" lbbr:(bw:%sbps,mrtt:%g",
+		       sprint_bw(b1, bw * 8.0),
+		       (double)s->lbbr_info->lbbr_min_rtt / 1000.0);
+		if (s->lbbr_info->lbbr_ssthresh && s->lbbr_info->lbbr_ssthresh < 0xFFFF)
+			printf(",ssthresh:%u", s->lbbr_info->lbbr_ssthresh);
+		if (s->lbbr_info->lbbr_target_cwnd)
+			printf(",target_cwnd:%u", s->lbbr_info->lbbr_target_cwnd);
+		printf(")");
+	}
+
 	if (s->send_bps)
 		printf(" send:%sbps", sprint_bw(b1, s->send_bps));
 	if (s->lastsnd)
@@ -2257,6 +2275,16 @@ static void tcp_show_info(const struct nlmsghdr *nlh, struct inet_diag_msg *r,
 				memcpy(s.bbr_info, bbr_info, len);
 		}
 
+		if (tb[INET_DIAG_LBBRINFO]) {
+			const void *lbbr_info = RTA_DATA(tb[INET_DIAG_LBBRINFO]);
+			int len = min(RTA_PAYLOAD(tb[INET_DIAG_LBBRINFO]),
+				      sizeof(*s.lbbr_info));
+
+			s.lbbr_info = calloc(1, sizeof(*s.lbbr_info));
+			if (s.lbbr_info && lbbr_info)
+				memcpy(s.lbbr_info, lbbr_info, len);
+		}
+
 		if (rtt > 0 && info->tcpi_snd_mss && info->tcpi_snd_cwnd) {
 			s.send_bps = (double) info->tcpi_snd_cwnd *
 				(double)info->tcpi_snd_mss * 8000000. / rtt;
@@ -2282,6 +2310,7 @@ static void tcp_show_info(const struct nlmsghdr *nlh, struct inet_diag_msg *r,
 		tcp_stats_print(&s);
 		free(s.dctcp);
 		free(s.bbr_info);
+		free(s.lbbr_info);
 	}
 }
 
